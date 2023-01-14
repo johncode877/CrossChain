@@ -47,6 +47,39 @@ async function publishLiquiditySC() {
   });
 }
 
+
+/* Libreria para obtener los valores de tokens
+de entrada que se requieren para hacer un intercambio 
+en el pool de liquidez 
+se utilizara como libreria para poder obtener este 
+valor y poder hacer la compra del nft con usdcoin 
+
+Compiled 1 Solidity file successfully
+Address: 0xF056396526318D8490133638ebC9ec9e2BA7b1df
+Nothing to compile
+Successfully submitted source code for contract
+contracts/MyLiquidity.sol:MyLiquidity at 0xF056396526318D8490133638ebC9ec9e2BA7b1df
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MyLiquidity on Etherscan.
+https://goerli.etherscan.io/address/0xF056396526318D8490133638ebC9ec9e2BA7b1df#code
+*/
+async function publishLibraryLiquiditySC() {
+  var MyLiquidity = await hre.ethers.getContractFactory("MyLiquidity");
+  var myLiquidity = await MyLiquidity.deploy();
+  var tx = await myLiquidity.deployed();
+  await tx.deployTransaction.wait(5);
+  console.log("Address:", myLiquidity.address);
+
+  await hre.run("verify:verify", {
+    contract: "contracts/MyLiquidity.sol:MyLiquidity",
+    address: myLiquidity.address,
+    constructorArguments: [],
+  });
+}
+
+
+
 async function swapTokensForExact() {
   var usdcAdd = "0x46bdCBd7f7eb221F06b5FEc60Be928B7744f95E5";
   var USDCoin = await hre.ethers.getContractFactory("USDCoin");
@@ -202,11 +235,16 @@ async function deployPublicSaleSC() {
 
 }
 
+
+
+// implementacion: 0x45d038f4b0e24acb22a02dFd39AFe5620c5627e8
+// implementacion: 0x6E93F82823c6dc40A1223Fbd63Bc947BeEc69273
 // implementacion: 0xfA9106f112f6EDa76e45BA6608ed5D6d3F5b8591 
 // implementacion: 0x87Edd6A6342BE960837f3EeBc2E8e64b8F975B21
 // implementacion: 0x8bbe8c0f09976Ab50217C8285d3B36e0d26f9c12
 // implementacion: 0xc574ABa6B27314207101afbC542842a82638341E
 // implementacion: 0x4b877A71F47bc9C4ba984E1F16397691e60d0588
+
 async function upgradePublicSaleSC() {
   
   console.log("Actualizando PublicSale ......");
@@ -330,7 +368,6 @@ async function deployTokensGoerli() {
 
 async function deployGoerli() {
 
-
   // gnosis safe
   // Crear un gnosis safe en https://gnosis-safe.io/app/
   // Extraer el address del gnosis safe y pasarlo al contrato con un setter
@@ -340,8 +377,9 @@ async function deployGoerli() {
 //deployGoerli()
 //testSetupPublicSale()
 //setupPublicSale()
-//upgradePublicSaleSC()
-  //deployPublicSaleSC() 
+//publishLibraryLiquiditySC()
+upgradePublicSaleSC()
+  //deployPublicSaleSC()
   //swapTokensForExact()
   //publishSwapper()
   //addLiquidityToPool()

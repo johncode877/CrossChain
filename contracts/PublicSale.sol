@@ -126,7 +126,7 @@ contract PublicSale is
         return (balance,priceNftInUSDC);
     }
 
-    function purchaseNftByIdUsingUSDCoin(uint256 _id) external {
+    function purchaseNftByIdUsingUSDCoin(uint256 _id,uint256 priceInUsdCoin) external {
         // 4 - el _id se encuentre entre 1 y 30
         //         * Mensaje de error: "NFT: Token id out of range"
         require((_id > 0) && (_id <= 30), "NFT: Token id out of range");
@@ -139,31 +139,18 @@ contract PublicSale is
         //         * Mensaje de error: "Public Sale: Not enough allowance"
 
         uint256 allowance = usdcoin.allowance(msg.sender, address(this));
-        require(allowance > 0, "Public Sale: Not enough allowance");
+        require(allowance >= priceInUsdCoin, "Public Sale: Not enough allowance");
 
         // Obtener el precio segun el id
         uint256 amountOut = _getPriceById(_id);
         tpriceNft = amountOut;
 
-        //uint256 balance = usdcoin.balanceOf(msg.sender);
-        uint256 priceNftInUSDC = amountOut / 8;
-
-        //require(
-        //    balance > priceNftInUSDC,
-        //    "Public Sale: Not enough token balance"
-        //);
-
-        // se establece un porcentaje adicional de usdc que
-        // routerUniSwap puede manejar de tus fondos para el
-        // intercambio de usdcs por miprimertoken
-        uint256 amountInMax = (12 * priceNftInUSDC) / 10;
-
         // obtiene USDC del comprador
-        usdcoin.transferFrom(msg.sender, address(this), amountInMax);
+        usdcoin.transferFrom(msg.sender, address(this), priceInUsdCoin);
 
         router = IUniSwapV2Router02(routerUniSwap);
 
-        usdcoin.approve(routerUniSwap, amountInMax);
+        usdcoin.approve(routerUniSwap, priceInUsdCoin);
 
         address[] memory path;
         path[0] = usdcAdd;
@@ -172,13 +159,11 @@ contract PublicSale is
         uint deadline = block.timestamp;
         uint[] memory amounts = router.swapTokensForExactTokens(
             amountOut,
-            amountInMax,
+            priceInUsdCoin,
             path,
             address(this),
             deadline
         );
-
-        //emit Convertion(amounts[0], amounts[1]);
 
         uint256 _fee = (amounts[1] * 10) / 100;
 
@@ -278,7 +263,7 @@ contract PublicSale is
         // SUGERENCIA: Usar gnosisSafeWallet.call para enviar el ether
         // Validar los valores de retorno de 'call' para saber si se envio el ether correctamente
         (bool success, ) = payable(gnosisSafeWallet).call{
-            value: msg.value,
+            value: 0.01 ether,
             gas: 500000
         }("");
         require(success, "Transfer Ether Gnosis failed");
@@ -290,13 +275,14 @@ contract PublicSale is
             // usar '.transfer' para enviar ether de vuelta al usuario
             uint256 _amountEther = msg.value - 0.01 ether;
 
-            //payable(msg.sender).transfer(_amountEther);
+            payable(msg.sender).transfer(_amountEther);
 
-            (success, ) = payable(gnosisSafeWallet).call{
-                value: _amountEther,
-                gas: 2300
-            }("");
-            require(success, "Transfer Ether To Client failed");
+            //(success, ) = payable(gnosisSafeWallet).call{
+            //    value: _amountEther,
+            //    gas: 2300
+            //}("");
+
+            //require(success, "Transfer Ether To Client failed");
         }
 
         nftIdsSaled[nftId - 1] = true;
@@ -339,6 +325,26 @@ contract PublicSale is
 
         return random;
     }
+
+    function getPriceNFTById(uint256 _id) external view returns (uint256) {   
+        uint256 priceGroupOne = 500;
+        uint256 priceGroupTwo = _id * 1000;
+        uint256 priceGroupThree = 10000; // temporalmente
+        if (_id > 0 && _id < 11) {
+            return priceGroupOne;
+        } else if (_id > 10 && _id < 21) {
+            return priceGroupTwo;
+        } else {
+            uint256 basePriceNft = 10000;
+            uint256 hourElapsed = (block.timestamp - startDate) / 3600;
+            priceGroupThree = basePriceNft + hourElapsed * 1000;
+            priceGroupThree = (priceGroupThree < MAX_PRICE_NFT_MPTKN)
+                ? priceGroupThree
+                : MAX_PRICE_NFT_MPTKN;
+
+            return priceGroupThree;
+        }
+    }    
 
     // Según el id del NFT, devuelve el precio. Existen 3 grupos de precios
     function _getPriceById(uint256 _id) internal view returns (uint256) {
